@@ -1,0 +1,377 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+input AddToCartDto {
+  productId: String!
+  quantity: Int = 1
+}
+
+type AuthResponse {
+  accessToken: String!
+  email: String!
+  name: String
+  refreshToken: String!
+  role: String!
+  userId: String!
+}
+
+type CartItemType {
+  id: ID!
+  product: Product!
+  quantity: Int!
+  totalPrice: Float!
+}
+
+type CartType {
+  items: [CartItemType!]!
+  totalAmount: Float!
+}
+
+type Category {
+  category: Category
+  id: ID!
+  image: String
+  name: String!
+  productCount: Int!
+  slug: String!
+}
+
+input ChangeOrderStatusDto {
+  orderId: String!
+  paymentStatus: PaymentStatus
+  status: OrderStatus
+}
+
+input CheckoutDto {
+  """Полный адрес доставки с индексом"""
+  address: String!
+  comment: String
+  deliveryCost: Float = 0
+  discount: Float = 0
+  email: String!
+
+  """Номер телефона в формате +7..."""
+  phone: String!
+}
+
+input CreateProductDto {
+  categoryId: String!
+  collection: String
+  color: String
+  configuration: String
+  description: String
+  fullDescription: String
+  image: String!
+  images: [String!]!
+  inStock: Boolean = true
+  material: String
+  name: String!
+  oldPrice: Float
+  price: Float!
+  size: String
+  sku: String
+  slug: String!
+  warranty: String
+}
+
+input CreateReviewDto {
+  comment: String
+  productId: ID!
+  rating: Int!
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+type DeleteReviewResponse {
+  message: String!
+  success: Boolean!
+}
+
+input InitiatePaymentDto {
+  method: PaymentMethod!
+  orderId: String!
+}
+
+input LoginDto {
+  email: String!
+  password: String!
+}
+
+type LogoutResponse {
+  success: Boolean!
+}
+
+type Mutation {
+  """Добавить товар в корзину"""
+  addToCart(input: AddToCartDto!): CartType!
+
+  """Добавить товар в избранное"""
+  addToWishlist(input: WishlistDto!): WishlistResponse!
+  changeOrderStatus(input: ChangeOrderStatusDto!): OrderModel!
+  checkout(input: CheckoutDto!): OrderModel!
+
+  """Очистить корзину"""
+  clearCart: CartType!
+
+  """Создать товар (Только ADMIN)"""
+  createProduct(input: CreateProductDto!): Product!
+
+  """Оставить отзыв на товар"""
+  createReview(input: CreateReviewDto!): ReviewModel!
+
+  """Удалить отзыв (свой или любой для админа)"""
+  deleteReview(reviewId: ID!): DeleteReviewResponse!
+
+  """Оплатить заказ (демо-режим)"""
+  initiatePayment(input: InitiatePaymentDto!): PaymentResponse!
+  login(input: LoginDto!): AuthResponse!
+
+  """Выйти из системы"""
+  logout: LogoutResponse!
+
+  """Обновить access token"""
+  refresh: AuthResponse!
+  register(input: RegisterDto!): AuthResponse!
+
+  """Удалить товар из корзины"""
+  removeFromCart(productId: String!): CartType!
+
+  """Удалить товар из избранного"""
+  removeFromWishlist(input: WishlistDto!): WishlistResponse!
+
+  """Удалить товар (Только ADMIN)"""
+  removeProduct(id: String!): Product!
+
+  """
+  Toggle: добавить/убрать товар из избранного. Возвращает текущее состояние.
+  """
+  toggleWishlist(input: WishlistDto!): Boolean!
+
+  """Обновить количество товара в корзине"""
+  updateCartItem(input: UpdateCartItemDto!): CartType!
+
+  """Обновить товар (Только ADMIN)"""
+  updateProduct(id: String!, input: UpdateProductDto!): Product!
+}
+
+type OrderItemModel {
+  id: ID!
+  price: Float!
+  productId: ID!
+  productImage: String
+  productName: String!
+  quantity: Int!
+  total: Float!
+}
+
+type OrderModel {
+  address: String!
+  comment: String
+  createdAt: DateTime!
+  deliveryCost: Float!
+  discount: Float!
+  email: String!
+  id: ID!
+  items: [OrderItemModel!]!
+  orderNumber: String!
+  paymentStatus: PaymentStatus!
+  phone: String!
+  status: OrderStatus!
+  subtotal: Float!
+  total: Float!
+  updatedAt: DateTime!
+  userId: ID!
+}
+
+enum OrderStatus {
+  CANCELLED
+  DELIVERED
+  PAID
+  PENDING
+  SHIPPED
+}
+
+enum PaymentMethod {
+  CARD
+  CASH
+  SBP
+}
+
+type PaymentResponse {
+  message: String!
+  paidAt: DateTime
+  paymentId: String!
+  success: Boolean!
+}
+
+enum PaymentStatus {
+  PAID
+  REFUNDED
+  UNPAID
+}
+
+"""Статус оплаты заказа"""
+type PaymentStatusType {
+  paidAt: DateTime
+
+  """ID транзакции во внешней системе"""
+  paymentId: String
+
+  """Способ оплаты (card, sbp, cash)"""
+  paymentMethod: String
+  paymentStatus: PaymentStatus!
+  status: OrderStatus!
+
+  """Итоговая сумма заказа"""
+  total: Float!
+}
+
+type Product {
+  category: Category
+  collection: String
+  color: String
+  configuration: String
+  description: String
+  fullDescription: String
+  id: ID!
+  image: String!
+  images: [String!]!
+  inStock: Boolean!
+  isInWishlist: Boolean
+  material: String
+  name: String!
+  oldPrice: Float
+  price: Float!
+  rating: Float!
+  reviewCount: Int!
+  size: String
+  sku: String
+  slug: String!
+  warranty: String
+}
+
+type Query {
+  allOrders: [OrderModel!]!
+
+  """Получить все категории"""
+  categories: [Category!]!
+
+  """Получить категорию по ID"""
+  category(id: String!): Category
+
+  """Получить корзину текущего пользователя"""
+  getCart: CartType!
+
+  """Получить данные текущего авторизованного пользователя"""
+  getMe: User!
+  myOrders: [OrderModel!]!
+  order(id: String!): OrderModel
+
+  """Получить текущий статус оплаты конкретного заказа"""
+  paymentStatus(orderId: String!): PaymentStatusType!
+
+  """Получить товар по ID"""
+  product(id: String!): Product
+
+  """Получить товар по его slug"""
+  productBySlug(slug: String!): Product!
+
+  """Получить все отзывы для конкретного товара"""
+  productReviews(productId: ID!): [ReviewModel!]!
+
+  """Получить все товары"""
+  products: [Product!]!
+
+  """Получить товары со скидкой (специальные предложения)"""
+  specialOffers(limit: Int! = 10): [Product!]!
+
+  """Товары с высоким рейтингом"""
+  topRated(limit: Int! = 8): [Product!]!
+
+  """Получить список избранного текущего пользователя"""
+  wishlist(input: WishlistQueryDto): WishlistResponse!
+}
+
+input RegisterDto {
+  email: String!
+  name: String
+  password: String!
+}
+
+type ReviewModel {
+  comment: String
+  createdAt: DateTime!
+  id: ID!
+  productId: ID!
+  rating: Int!
+  user: User
+  userId: ID!
+}
+
+input UpdateCartItemDto {
+  productId: String!
+  quantity: Int!
+}
+
+input UpdateProductDto {
+  categoryId: String
+  collection: String
+  color: String
+  configuration: String
+  description: String
+  fullDescription: String
+  image: String
+  images: [String!]
+  inStock: Boolean
+  material: String
+  name: String
+  oldPrice: Float
+  price: Float
+  size: String
+  sku: String
+  slug: String
+  warranty: String
+}
+
+type User {
+  createdAt: DateTime!
+  email: String!
+  id: ID!
+  name: String
+  role: UserRole!
+}
+
+"""Роль пользователя"""
+enum UserRole {
+  ADMIN
+  USER
+}
+
+input WishlistDto {
+  productId: ID!
+}
+
+type WishlistItemModel {
+  createdAt: DateTime!
+  id: ID!
+  product: Product
+  productId: ID!
+  userId: ID!
+}
+
+input WishlistQueryDto {
+  limit: Int = 12
+  page: Int = 1
+}
+
+type WishlistResponse {
+  currentPage: Int!
+  hasNextPage: Boolean!
+  items: [WishlistItemModel!]!
+  totalCount: Int!
+  totalPages: Int!
+}

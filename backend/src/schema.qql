@@ -1,0 +1,42 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type Category {
+  category: Category
+  id: ID!
+  image: String
+  name: String!
+  productCount: Int!
+  slug: String!
+}
+
+type Product {
+  category: Category
+  categoryId: Int!
+  description: String
+  id: ID!
+  image: String!
+  images: [String!]!
+  inStock: Boolean!
+  name: String!
+  oldPrice: Float
+  price: Float!
+  rating: Float!
+  reviewCount: Int!
+  slug: String!
+}
+
+type Query {
+  """Получить все категории"""
+  categories: [Category!]!
+
+  """Получить категорию по ID"""
+  category(id: String!): Category
+
+  """Получить товар по его ID"""
+  product(id: Int!): Product
+
+  """Получить список всех товаров"""
+  products: [Product!]!
+}
