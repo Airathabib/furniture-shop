@@ -1,4 +1,5 @@
 import { Field, ID, Int, ObjectType } from '@nestjs/graphql';
+import { Subcategory } from './subcategory.model';
 
 @ObjectType()
 export class Category {
@@ -16,4 +17,7 @@ export class Category {
 
   @Field(() => Int)
   productCount?: number;
+
+  @Field(() => [Subcategory], { nullable: true })
+  subcategories?: Subcategory[] | null;
 }
