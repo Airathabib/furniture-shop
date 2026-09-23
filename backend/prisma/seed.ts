@@ -67,7 +67,7 @@ async function main() {
     data: {
       name: 'Диваны',
       slug: 'divany',
-      image: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=400',
+      image: `${BACKEND_URL}/categories/sofas.jpg`,
     },
   });
 
@@ -75,8 +75,7 @@ async function main() {
     data: {
       name: 'Кресла',
       slug: 'kresla',
-      image:
-        'https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?w=400',
+      image: `${BACKEND_URL}/categories/armchair.webp`,
     },
   });
 
@@ -84,8 +83,7 @@ async function main() {
     data: {
       name: 'Кровати',
       slug: 'krovati',
-      image:
-        'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=400',
+      image: `${BACKEND_URL}/categories/bed.webp`,
     },
   });
 
@@ -93,8 +91,7 @@ async function main() {
     data: {
       name: 'Стулья',
       slug: 'stulya',
-      image:
-        'https://images.unsplash.com/photo-1592078615290-033ee584e267?w=400',
+      image: `${BACKEND_URL}/categories/chair.jpg`,
     },
   });
 
@@ -102,8 +99,7 @@ async function main() {
     data: {
       name: 'Аксессуары',
       slug: 'aksessuary',
-      image:
-        'https://images.unsplash.com/photo-1513519245088-0e12902e35ca?w=400',
+      image: `${BACKEND_URL}/categories/assesories.jpg`,
     },
   });
 
