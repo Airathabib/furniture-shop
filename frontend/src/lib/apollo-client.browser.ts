@@ -10,7 +10,6 @@ import {
 import { onError } from "@apollo/client/link/error";
 import { toast } from "sonner";
 import { clearSession } from "@/lib/auth-utils";
-
 import { notifySessionChanged } from "@/hooks/use-user-session";
 
 // ==========================================
@@ -39,11 +38,12 @@ interface ApolloErrorResponse {
     errors?: readonly ApolloErrorShape[];
     data?: unknown;
   };
-
+  // ✅ Используем Operation из Apollo (он точно экспортируется)
   operation?: Operation;
-
+  // ✅ Описываем forward вручную — это надёжнее, чем импорт NextLink
   forward?: (operation: Operation) => Observable<FetchResult>;
 }
+
 const httpLink = new HttpLink({
   uri: "/api/graphql",
   credentials: "include",
@@ -55,6 +55,7 @@ let pendingRequests: Array<() => void> = [];
 const errorLink = onError((response: unknown) => {
   const res = response as ApolloErrorResponse;
 
+  // Универсальное извлечение ошибок
   const graphQLErrors =
     res?.graphQLErrors ||
     res?.errors ||
@@ -66,6 +67,7 @@ const errorLink = onError((response: unknown) => {
   const operation = res?.operation;
   const forward = res?.forward;
 
+  // 1. Обработка сетевых ошибок (ECONNREFUSED)
   if (networkError) {
     console.error("[Apollo] Network error:", networkError);
     const errorCause = (networkError as { cause?: { code?: string } })?.cause;
@@ -80,6 +82,7 @@ const errorLink = onError((response: unknown) => {
     return;
   }
 
+  // 2. Обработка GraphQL ошибок
   if (!graphQLErrors || graphQLErrors.length === 0) return;
 
   const authError = graphQLErrors.find(
@@ -160,6 +163,7 @@ const errorLink = onError((response: unknown) => {
     });
   }
 
+  // Обработка остальных ошибок
   for (const err of graphQLErrors) {
     const code = err.extensions?.code;
     if (code === "FORBIDDEN") toast.error("Доступ запрещён");
