@@ -51,7 +51,6 @@ export class CategoryService {
     };
   }
 
-  // ✅ ВОТ ЭТОГО МЕТОДА НЕ ХВАТАЛО
   async getProductsByCategory(slug: string, limit: number = 50) {
     const category = await this.prisma.category.findUnique({
       where: { slug },

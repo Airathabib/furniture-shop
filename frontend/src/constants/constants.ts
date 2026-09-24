@@ -84,7 +84,6 @@ export const REFRESH_MUTATION = gql`
   }
 `;
 
-
 export const GET_PRODUCT_BY_SLUG = gql`
   query GetProductBySlug($slug: String!) {
     productBySlug(slug: $slug) {
@@ -127,6 +126,30 @@ export const GET_CATEGORY_BY_SLUG = gql`
 export const GET_PRODUCTS_BY_CATEGORY = gql`
   query GetProductsByCategory($slug: String!, $limit: Int) {
     productsByCategory(slug: $slug, limit: $limit) {
+      id
+      name
+      slug
+      price
+      oldPrice
+      image
+      rating
+    }
+  }
+`;
+
+export const GET_ALL_CATEGORIES = gql`
+  query GetAllCategories {
+    categories {
+      id
+      name
+      slug
+    }
+  }
+`;
+
+export const GET_ALL_PRODUCTS = gql`
+  query GetAllProducts($limit: Int) {
+    products(limit: $limit) {
       id
       name
       slug

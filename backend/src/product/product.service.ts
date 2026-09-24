@@ -59,13 +59,15 @@ export class ProductService {
       .replace(/-+/g, '-')
       .replace(/^-|-$/g, '');
   }
-  async findAll() {
+
+  async findAll(limit: number = 50): Promise<Product[]> {
     return this.prisma.product.findMany({
+      take: limit, //Ограничиваем количество возвращаемых товаров
       include: {
         category: true,
       },
       orderBy: {
-        createdAt: 'desc',
+        createdAt: 'desc', // Показываем самые новые товары
       },
     });
   }

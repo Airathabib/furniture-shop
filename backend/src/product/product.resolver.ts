@@ -9,7 +9,7 @@ import {
   Int,
 } from '@nestjs/graphql';
 import { Request } from 'express';
-import { JwtService } from '@nestjs/jwt'; // <-- 1. Импортируем JwtService
+import { JwtService } from '@nestjs/jwt';
 import { Role, type User as PrismaUser } from 'generated/prisma/client';
 
 import { ProductService } from './product.service';
@@ -40,9 +40,13 @@ export class ProductResolver {
     private readonly jwtService: JwtService,
   ) {}
 
-  @Query(() => [Product], { description: 'Получить все товары' })
-  async products() {
-    return this.productService.findAll();
+  @Query(() => [Product], {
+    description: 'Получить все товары (для общего каталога)',
+  })
+  async products(
+    @Args('limit', { type: () => Int, defaultValue: 50 }) limit: number,
+  ): Promise<Product[]> {
+    return this.productService.findAll(limit);
   }
 
   @Query(() => Product, { nullable: true, description: 'Получить товар по ID' })

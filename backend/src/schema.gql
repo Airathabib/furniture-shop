@@ -287,8 +287,8 @@ type Query {
   """Получить все отзывы для конкретного товара"""
   productReviews(productId: ID!): [ReviewModel!]!
 
-  """Получить все товары"""
-  products: [Product!]!
+  """Получить все товары (для общего каталога)"""
+  products(limit: Int! = 50): [Product!]!
 
   """Получить все товары конкретной категории"""
   productsByCategory(limit: Int! = 50, slug: String!): [Product!]!
