@@ -147,9 +147,21 @@ export const GET_ALL_CATEGORIES = gql`
   }
 `;
 
-export const GET_ALL_PRODUCTS = gql`
-  query GetAllProducts($limit: Int) {
-    products(limit: $limit) {
+export const GET_PRODUCTS = gql`
+  query GetProducts(
+    $limit: Int
+    $categorySlugs: [String!]
+    $minPrice: Float
+    $maxPrice: Float
+    $discountFilters: [String!]
+  ) {
+    products(
+      limit: $limit
+      categorySlugs: $categorySlugs
+      minPrice: $minPrice
+      maxPrice: $maxPrice
+      discountFilters: $discountFilters
+    ) {
       id
       name
       slug

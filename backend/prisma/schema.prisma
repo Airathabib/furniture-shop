@@ -65,6 +65,7 @@ model Product {
   warranty        String?
   price           Float
   oldPrice        Float?
+	discountAmount  Float?  
   image           String
   images          String[]
   inStock         Boolean        @default(true)

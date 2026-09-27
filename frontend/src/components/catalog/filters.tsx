@@ -46,7 +46,6 @@ export function Filters({ categories }: FiltersProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Инициализируем состояние из URL при первой загрузке
   const [selectedCategories, setSelectedCategories] = useState<string[]>(
     searchParams.get("categories")
       ? searchParams.get("categories")!.split(",")
@@ -70,6 +69,7 @@ export function Filters({ categories }: FiltersProps) {
 
     if (newFilters.categories.length > 0) {
       params.set("categories", newFilters.categories.join(","));
+      params.delete("category");
     } else {
       params.delete("categories");
     }
@@ -100,12 +100,10 @@ export function Filters({ categories }: FiltersProps) {
     router.push(`?${params.toString()}`, { scroll: false });
   };
 
-  // ✅ ЕДИНСТВЕННАЯ ПРАВИЛЬНАЯ ВЕРСИЯ ФУНКЦИИ
   const handleCategoryChange = (categorySlug: string, checked: boolean) => {
     const newCategories = checked
       ? [...selectedCategories, categorySlug]
       : selectedCategories.filter((slug) => slug !== categorySlug);
-
     setSelectedCategories(newCategories);
     updateURL({ categories: newCategories, priceRange, discounts, colors });
   };
@@ -115,7 +113,12 @@ export function Filters({ categories }: FiltersProps) {
       ? [...discounts, discountId]
       : discounts.filter((id) => id !== discountId);
     setDiscounts(newDiscounts);
-    updateURL({ categories: selectedCategories, priceRange, discounts: newDiscounts, colors });
+    updateURL({
+      categories: selectedCategories,
+      priceRange,
+      discounts: newDiscounts,
+      colors,
+    });
   };
 
   const handleColorChange = (colorId: string, checked: boolean) => {
@@ -123,13 +126,47 @@ export function Filters({ categories }: FiltersProps) {
       ? [...colors, colorId]
       : colors.filter((id) => id !== colorId);
     setColors(newColors);
-    updateURL({ categories: selectedCategories, priceRange, discounts, colors: newColors });
+    updateURL({
+      categories: selectedCategories,
+      priceRange,
+      discounts,
+      colors: newColors,
+    });
   };
 
-  const handlePriceChange = (value: number[]) => {
+  // ✅ Для слайдера: обновляем URL только при отпускании мыши
+  const handleSliderCommit = (value: number[]) => {
     const newRange: [number, number] = [value[0], value[1]];
     setPriceRange(newRange);
-    updateURL({ categories: selectedCategories, priceRange: newRange, discounts, colors });
+    updateURL({
+      categories: selectedCategories,
+      priceRange: newRange,
+      discounts,
+      colors,
+    });
+  };
+
+  // ✅ Для инпутов: обновляем только локальный стейт (чтобы цифры менялись при вводе)
+  const handlePriceInputChange = (index: 0 | 1, stringValue: string) => {
+    const numValue = stringValue === "" ? 0 : Number(stringValue);
+    const newRange: [number, number] =
+      index === 0 ? [numValue, priceRange[1]] : [priceRange[0], numValue];
+    setPriceRange(newRange);
+  };
+
+  // ✅ Для инпутов: отправляем запрос ТОЛЬКО при потере фокуса или нажатии Enter
+  const handlePriceInputCommit = (index: 0 | 1, stringValue: string) => {
+    const numValue = stringValue === "" ? 0 : Number(stringValue);
+    if (isNaN(numValue) || numValue < 0) return; // Защита от некорректных данных
+
+    const newRange: [number, number] =
+      index === 0 ? [numValue, priceRange[1]] : [priceRange[0], numValue];
+    updateURL({
+      categories: selectedCategories,
+      priceRange: newRange,
+      discounts,
+      colors,
+    });
   };
 
   const resetFilters = () => {
@@ -191,7 +228,8 @@ export function Filters({ categories }: FiltersProps) {
             max={150000}
             step={1000}
             value={priceRange}
-            onValueChange={handlePriceChange}
+            onValueChange={(value) => setPriceRange([value[0], value[1]])} // ✅ Плавное обновление UI без запросов
+            onValueCommit={handleSliderCommit} // ✅ Запрос к базе ТОЛЬКО здесь
             className="w-full"
           />
         </div>
@@ -199,9 +237,11 @@ export function Filters({ categories }: FiltersProps) {
           <Input
             type="number"
             value={priceRange[0]}
-            onChange={(e) =>
-              handlePriceChange([Number(e.target.value), priceRange[1]])
-            }
+            onChange={(e) => handlePriceInputChange(0, e.target.value)} // ✅ Только меняем цифры на экране
+            onBlur={(e) => handlePriceInputCommit(0, e.target.value)} // ✅ Запрос при клике вне поля
+            onKeyDown={(e) => {
+              if (e.key === "Enter") e.currentTarget.blur(); // ✅ Или при нажатии Enter
+            }}
             className="h-8 w-24 text-xs"
             placeholder="от"
           />
@@ -209,9 +249,11 @@ export function Filters({ categories }: FiltersProps) {
           <Input
             type="number"
             value={priceRange[1]}
-            onChange={(e) =>
-              handlePriceChange([priceRange[0], Number(e.target.value)])
-            }
+            onChange={(e) => handlePriceInputChange(1, e.target.value)} // ✅ Только меняем цифры на экране
+            onBlur={(e) => handlePriceInputCommit(1, e.target.value)} // ✅ Запрос при клике вне поля
+            onKeyDown={(e) => {
+              if (e.key === "Enter") e.currentTarget.blur(); // ✅ Или при нажатии Enter
+            }}
             className="h-8 w-24 text-xs"
             placeholder="до"
           />

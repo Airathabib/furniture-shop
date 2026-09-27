@@ -60,14 +60,74 @@ export class ProductService {
       .replace(/^-|-$/g, '');
   }
 
-  async findAll(limit: number = 50): Promise<Product[]> {
+  private calculateDiscount(
+    price: number,
+    oldPrice?: number | null,
+  ): number | null {
+    if (oldPrice && oldPrice > price) {
+      return Math.round(oldPrice - price);
+    }
+    return null;
+  }
+
+  async findAll(
+    limit: number = 50,
+    categorySlugs?: string[],
+    minPrice?: number,
+    maxPrice?: number,
+    discountFilters?: string[],
+  ): Promise<Product[]> {
+    // 1. Базовый объект where
+    const where: any = {
+      ...(categorySlugs &&
+        categorySlugs.length > 0 && {
+          category: { slug: { in: categorySlugs } },
+        }),
+    };
+
+    // ✅ 2. ПРАВИЛЬНЫЙ СПОСОБ: собираем условия цены в ОДИН объект
+    const priceFilter: any = {};
+    if (minPrice !== undefined) priceFilter.gte = minPrice; // Greater Than or Equal (>=)
+    if (maxPrice !== undefined) priceFilter.lte = maxPrice; // Less Than or Equal (<=)
+
+    // Добавляем в where только если есть хотя бы одно условие по цене
+    if (Object.keys(priceFilter).length > 0) {
+      where.price = priceFilter;
+    }
+
+    // 3. Фильтр по скидкам
+    if (discountFilters && discountFilters.length > 0) {
+      const discountConditions: any[] = [];
+
+      if (discountFilters.includes('more5000')) {
+        discountConditions.push({ discountAmount: { gte: 5000 } });
+      }
+      if (discountFilters.includes('less5000')) {
+        discountConditions.push({
+          AND: [
+            { discountAmount: { gt: 0 } },
+            { discountAmount: { lt: 5000 } },
+          ],
+        });
+      }
+      if (discountFilters.includes('no-discount')) {
+        discountConditions.push({ discountAmount: { gt: 0 } });
+      }
+
+      if (discountConditions.length > 0) {
+        where.OR = discountConditions;
+      }
+    }
+
+    // 4. Выполняем запрос
     return this.prisma.product.findMany({
-      take: limit, //Ограничиваем количество возвращаемых товаров
+      where,
+      take: limit,
+      orderBy: {
+        createdAt: 'desc',
+      },
       include: {
         category: true,
-      },
-      orderBy: {
-        createdAt: 'desc', // Показываем самые новые товары
       },
     });
   }
@@ -149,11 +209,10 @@ export class ProductService {
   }
 
   async create(input: CreateProductDto) {
-    // 1. Берем переданный slug, а если его нет — генерируем из названия
     const rawSlug = input.slug || input.name;
     let safeSlug = this.generateSafeSlug(rawSlug);
+    const discountAmount = this.calculateDiscount(input.price, input.oldPrice);
 
-    // 2. Проверяем уникальность (защита от дубликатов)
     let counter = 1;
     let isUnique = false;
 
@@ -178,6 +237,7 @@ export class ProductService {
         slug: safeSlug, // <-- Перезаписываем slug на отформатированный
         rating: 0,
         reviewCount: 0,
+        discountAmount,
       },
       include: {
         category: true,
@@ -186,7 +246,8 @@ export class ProductService {
   }
 
   async update(id: string, input: UpdateProductDto) {
-    await this.findOne(id);
+    // 1. Получаем текущий товар, чтобы использовать его цены как запасной вариант
+    const product = await this.findOne(id);
 
     const {
       categoryId,
@@ -208,6 +269,18 @@ export class ProductService {
       inStock,
     } = input;
 
+    // 2. Определяем актуальные цены для расчета (новые из input или старые из БД)
+    const currentPrice = price !== undefined ? price : product.price;
+    const currentOldPrice =
+      oldPrice !== undefined ? oldPrice : product.oldPrice;
+
+    // 3. Рассчитываем новую сумму скидки
+    const discountAmount = this.calculateDiscount(
+      currentPrice,
+      currentOldPrice,
+    );
+
+    // 4. Формируем объект для обновления
     const data: Prisma.ProductUpdateInput = {
       ...(name !== undefined && { name }),
       ...(slug !== undefined && { slug }),
@@ -215,9 +288,7 @@ export class ProductService {
       ...(price !== undefined && { price }),
       ...(oldPrice !== undefined && { oldPrice }),
       ...(description !== undefined && { description }),
-      ...(fullDescription !== undefined && {
-        fullDescription,
-      }),
+      ...(fullDescription !== undefined && { fullDescription }),
       ...(collection !== undefined && { collection }),
       ...(size !== undefined && { size }),
       ...(configuration !== undefined && { configuration }),
@@ -227,7 +298,6 @@ export class ProductService {
       ...(image !== undefined && { image }),
       ...(images !== undefined && { images }),
       ...(inStock !== undefined && { inStock }),
-
       ...(categoryId !== undefined && {
         category: {
           connect: {
@@ -235,6 +305,10 @@ export class ProductService {
           },
         },
       }),
+
+      // ✅ 5. ВСЕГДА обновляем поле discountAmount.
+      // Prisma корректно обработает как число, так и null (если скидки нет)
+      discountAmount: discountAmount,
     };
 
     return this.prisma.product.update({

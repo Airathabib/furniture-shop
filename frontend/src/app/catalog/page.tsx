@@ -16,7 +16,7 @@ import {
   GET_CATEGORY_BY_SLUG,
   GET_PRODUCTS_BY_CATEGORY,
   GET_ALL_CATEGORIES,
-  GET_ALL_PRODUCTS, // ✅ Добавили
+  GET_PRODUCTS, // ✅ Используем обновленный универсальный запрос
 } from "@/constants/constants";
 import { CategoryBySlugQueryData, ProductCardData } from "@/types/types";
 
@@ -27,22 +27,35 @@ interface FilterCategory {
 }
 
 interface CatalogPageProps {
-  searchParams: Promise<{ category?: string }>;
+  searchParams: Promise<{
+    category?: string;
+    categories?: string;
+    minPrice?: string; // ✅ Должно быть string (и опционально ?), так как приходит из URL
+    maxPrice?: string; // ✅ Должно быть string (и опционально ?), так как приходит из URL
+    discounts?: string;
+  }>;
 }
 
-interface ProductsByCategoryQueryData {
-  productsByCategory: ProductCardData[];
-}
-
-interface AllProductsQueryData {
+interface ProductsQueryData {
   products: ProductCardData[];
 }
 
 export default async function CatalogPage({ searchParams }: CatalogPageProps) {
-  const { category } = await searchParams;
+  // ✅ Читаем и одиночную category (для старых ссылок), и массив categories (из чекбоксов)
+  const {
+    category,
+    categories: categoriesParam,
+    minPrice: minPriceStr,
+    maxPrice: maxPriceStr,
+    discounts: discountsStr,
+  } = await searchParams;
+
   const client = await getServerApolloClient();
 
-  // 1. ВСЕГДА загружаем категории для сайдбара фильтров
+  const minPrice = minPriceStr ? Number(minPriceStr) : undefined;
+  const maxPrice = maxPriceStr ? Number(maxPriceStr) : undefined;
+  const discountFilters = discountsStr ? discountsStr.split(",") : undefined;
+  // 1. ВСЕГДА загружаем категории для сайдбара
   const { data: allCategoriesData } = await client.query<{
     categories: FilterCategory[];
   }>({
@@ -50,13 +63,19 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
   });
   const allCategories = allCategoriesData?.categories || [];
 
+  // 2. Определяем, какие категории фильтровать
+  let activeCategorySlugs: string[] | undefined = undefined;
+  let pageTitle = "Каталог";
   let categoryInfo = null;
-  let products: ProductCardData[] = [];
-  let pageTitle = "Все товары";
 
-  // 2. Условная логика загрузки данных
-  if (category) {
-    // А) Если категория указана в URL
+  if (categoriesParam) {
+    // Если выбраны чекбоксы (например, ?categories=divany,kresla)
+    activeCategorySlugs = categoriesParam.split(",");
+    pageTitle = "Выбранные категории";
+  } else if (category) {
+    // Если перешли по прямой ссылке на одну категорию (например, ?category=divany)
+    activeCategorySlugs = [category];
+
     const { data: categoryData } = await client.query<
       CategoryBySlugQueryData,
       { slug: string }
@@ -64,66 +83,65 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
       query: GET_CATEGORY_BY_SLUG,
       variables: { slug: category },
     });
-
     categoryInfo = categoryData?.categoryBySlug;
-
-    if (!categoryInfo) {
-      return (
-        <Container className="py-12">
-          <TypographyH1>Категория не найдена</TypographyH1>
-        </Container>
-      );
-    }
-
-    pageTitle = categoryInfo.name;
-
-    const { data: productsData } = await client.query<
-      ProductsByCategoryQueryData,
-      { slug: string; limit: number }
-    >({
-      query: GET_PRODUCTS_BY_CATEGORY,
-      variables: { slug: category, limit: 50 },
-    });
-    products = productsData?.productsByCategory || [];
-  } else {
-    // Б) Если категории НЕТ в URL (страница /catalog)
-    const { data: allProductsData } = await client.query<
-      AllProductsQueryData,
-      { limit: number }
-    >({
-      query: GET_ALL_PRODUCTS,
-      variables: { limit: 50 }, // Показываем 50 последних товаров
-    });
-    products = allProductsData?.products || [];
+    if (categoryInfo) pageTitle = categoryInfo.name;
   }
 
-  // 3. Рендеринг страницы
+  // 3. Загружаем товары с учетом фильтров (или все, если фильтров нет)
+  const { data: productsData } = await client.query<
+    ProductsQueryData,
+    {
+      limit: number;
+      categorySlugs?: string[];
+      minPrice?: number;
+      maxPrice?: number;
+      discountFilters?: string[];
+    }
+  >({
+    query: GET_PRODUCTS,
+    variables: {
+      limit: 50,
+      categorySlugs: activeCategorySlugs,
+      minPrice,
+      maxPrice,
+      discountFilters,
+    },
+  });
+
+  const products = productsData?.products || [];
+
+  // 4. Если категория была в URL, но не найдена в БД
+  if (category && !categoriesParam && !categoryInfo) {
+    return (
+      <Container className="py-12">
+        <BackButton />
+        <TypographyH1>Категория не найдена</TypographyH1>
+      </Container>
+    );
+  }
+
+  // 5. Рендеринг
   return (
     <Container className="py-12">
-      {/* Хлебные крошки */}
-   
       <Breadcrumb className="mb-6">
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink href="/">Главная</BreadcrumbLink>
           </BreadcrumbItem>
-
           <BreadcrumbSeparator />
-
-          {category ? (
+          {category && !categoriesParam ? (
             <>
               <BreadcrumbItem>
                 <BreadcrumbLink href="/catalog">Каталог</BreadcrumbLink>
               </BreadcrumbItem>
-              <BreadcrumbSeparator />{" "}
-              {/* ✅ Вынесли наружу, теперь это сосед */}
+              <BreadcrumbSeparator />
               <BreadcrumbItem>
                 <BreadcrumbPage>{pageTitle}</BreadcrumbPage>
               </BreadcrumbItem>
             </>
           ) : (
             <BreadcrumbItem>
-              <BreadcrumbPage>Каталог</BreadcrumbPage>
+              <BreadcrumbPage>{pageTitle}</BreadcrumbPage>
             </BreadcrumbItem>
           )}
         </BreadcrumbList>
@@ -132,7 +150,6 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
       <BackButton className="mb-4" />
       <TypographyH1 className="mb-2">{pageTitle}</TypographyH1>
 
-      {/* Подкатегории показываем только если выбрана конкретная категория */}
       {categoryInfo?.subcategories && categoryInfo.subcategories.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-4">
           {categoryInfo.subcategories.map(
@@ -149,12 +166,11 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
       )}
 
       <p className="text-muted-foreground text-sm mb-8">
-        {category
-          ? `Найдено товаров в категории: ${products.length}`
+        {activeCategorySlugs
+          ? `Найдено товаров по фильтру: ${products.length}`
           : `Показано товаров: ${products.length}`}
       </p>
 
-      {/* Двухколоночный макет */}
       <div className="flex flex-col lg:flex-row gap-8">
         <aside className="w-full lg:w-72 flex-shrink-0">
           <Filters categories={allCategories} />
@@ -178,7 +194,9 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
             </div>
           ) : (
             <div className="text-center py-12 bg-muted/30 rounded-lg border border-dashed border-border">
-              <p className="text-muted-foreground">Товары не найдены</p>
+              <p className="text-muted-foreground">
+                По выбранным фильтрам товары не найдены
+              </p>
             </div>
           )}
         </div>

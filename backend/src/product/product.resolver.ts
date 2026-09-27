@@ -7,6 +7,7 @@ import {
   Parent,
   Context,
   Int,
+  Float,
 } from '@nestjs/graphql';
 import { Request } from 'express';
 import { JwtService } from '@nestjs/jwt';
@@ -40,13 +41,23 @@ export class ProductResolver {
     private readonly jwtService: JwtService,
   ) {}
 
-  @Query(() => [Product], {
-    description: 'Получить все товары (для общего каталога)',
-  })
+  @Query(() => [Product], { description: 'Получить товары с фильтрацией' })
   async products(
     @Args('limit', { type: () => Int, defaultValue: 50 }) limit: number,
+    @Args('categorySlugs', { type: () => [String], nullable: true })
+    categorySlugs?: string[],
+    @Args('minPrice', { type: () => Float, nullable: true }) minPrice?: number,
+    @Args('maxPrice', { type: () => Float, nullable: true }) maxPrice?: number,
+    @Args('discountFilters', { type: () => [String], nullable: true })
+    discountFilters?: string[], // ✅
   ): Promise<Product[]> {
-    return this.productService.findAll(limit);
+    return this.productService.findAll(
+      limit,
+      categorySlugs,
+      minPrice,
+      maxPrice,
+      discountFilters,
+    );
   }
 
   @Query(() => Product, { nullable: true, description: 'Получить товар по ID' })
