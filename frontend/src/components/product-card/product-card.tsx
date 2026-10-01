@@ -4,7 +4,18 @@ import { Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TypographyH3 } from "../ui/typography-h3";
 import { cn } from "@/lib/utils";
-import { ProductCardProps } from "@/types/types";
+
+export interface ProductCardProps {
+  id: string;
+  name: string;
+  slug: string;
+  price: number;
+  oldPrice?: number | null;
+  image: string;
+  rating?: number;
+  showOldPrice?: boolean;
+  className?: string;
+}
 
 export function ProductCard({
   name,

@@ -9,7 +9,7 @@ datasource db {
 }
 
 model User {
-  id           String  @id @default(uuid()) @db.Uuid
+   id       String  @id @default(uuid()) @db.Uuid
   email        String  @unique
   password     String
   name         String?
@@ -20,7 +20,7 @@ model User {
   updatedAt DateTime @updatedAt
 
   cart     CartItem[]
-  orders   Order[]
+  orders   Order[] @relation(name: "OrderToUser")
   reviews  Review[]
   wishlist WishlistItem[]
 
@@ -65,7 +65,7 @@ model Product {
   warranty        String?
   price           Float
   oldPrice        Float?
-	discountAmount  Float?  
+	discountAmount  Float?
   image           String
   images          String[]
   inStock         Boolean        @default(true)
@@ -128,8 +128,12 @@ model WishlistItem {
 model Order {
   id          String @id @default(uuid()) @db.Uuid
   orderNumber String @unique
-  userId      String @db.Uuid
-  user        User   @relation(fields: [userId], references: [id])
+  
+  // ✅ 1. Внешний ключ опциональный
+  userId      String? @db.Uuid
+  
+  // ✅ 2. Сама связь тоже опциональная + добавлено имя связи для синхронизации
+  user        User?   @relation(fields: [userId], references: [id], name: "OrderToUser")
 
   paymentMethod String?
   paymentId     String?   @unique
@@ -143,9 +147,9 @@ model Order {
   discount     Float @default(0)
   total        Float
 
-  address String
+  address String?  // ✅ Сделали необязательным
   phone   String
-  email   String
+  email   String?  // ✅ Сделали необязательным
   comment String?
 
   createdAt DateTime @default(now())

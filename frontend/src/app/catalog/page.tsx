@@ -30,9 +30,11 @@ interface CatalogPageProps {
   searchParams: Promise<{
     category?: string;
     categories?: string;
-    minPrice?: string; // ✅ Должно быть string (и опционально ?), так как приходит из URL
-    maxPrice?: string; // ✅ Должно быть string (и опционально ?), так как приходит из URL
+    minPrice?: string;
+    maxPrice?: string;
     discounts?: string;
+    colors?: string;
+    search?: string; // ✅ 1. Добавили search в типизацию
   }>;
 }
 
@@ -41,13 +43,14 @@ interface ProductsQueryData {
 }
 
 export default async function CatalogPage({ searchParams }: CatalogPageProps) {
-  // ✅ Читаем и одиночную category (для старых ссылок), и массив categories (из чекбоксов)
   const {
     category,
     categories: categoriesParam,
     minPrice: minPriceStr,
     maxPrice: maxPriceStr,
     discounts: discountsStr,
+    colors: colorsStr,
+    search,
   } = await searchParams;
 
   const client = await getServerApolloClient();
@@ -55,6 +58,8 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
   const minPrice = minPriceStr ? Number(minPriceStr) : undefined;
   const maxPrice = maxPriceStr ? Number(maxPriceStr) : undefined;
   const discountFilters = discountsStr ? discountsStr.split(",") : undefined;
+  const colorFilters = colorsStr ? colorsStr.split(",") : undefined;
+
   // 1. ВСЕГДА загружаем категории для сайдбара
   const { data: allCategoriesData } = await client.query<{
     categories: FilterCategory[];
@@ -68,7 +73,9 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
   let pageTitle = "Каталог";
   let categoryInfo = null;
 
-  if (categoriesParam) {
+  if (search) {
+    pageTitle = `Результаты поиска: "${search}"`;
+  } else if (categoriesParam) {
     // Если выбраны чекбоксы (например, ?categories=divany,kresla)
     activeCategorySlugs = categoriesParam.split(",");
     pageTitle = "Выбранные категории";
@@ -96,6 +103,8 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
       minPrice?: number;
       maxPrice?: number;
       discountFilters?: string[];
+      colorFilters?: string[];
+			search?: string
     }
   >({
     query: GET_PRODUCTS,
@@ -105,6 +114,9 @@ export default async function CatalogPage({ searchParams }: CatalogPageProps) {
       minPrice,
       maxPrice,
       discountFilters,
+      colorFilters,
+			search: search || undefined
+
     },
   });
 

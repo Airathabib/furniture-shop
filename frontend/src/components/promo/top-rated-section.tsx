@@ -5,9 +5,11 @@ import { Container } from '@/components/ui/container';
 import { ProductCard } from '@/components/product-card/product-card';
 import { TypographyH2 } from '../ui/typography-h2';
 import { Button } from '@/components/ui/button';
-import { TopRatedSectionProps } from '@/types/types';
+import { TopRatedProduct } from '@/types/types';
 
-
+export interface TopRatedSectionProps {
+  products: TopRatedProduct[];
+}
 
 export function TopRatedSection({ products }: TopRatedSectionProps) {
 

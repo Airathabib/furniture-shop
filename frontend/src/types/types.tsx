@@ -18,23 +18,6 @@ export interface Category {
 // Для главной страницы используем тот же тип Category
 export type TopCategory = Category;
 
-export interface CategoryCardProps {
-  id: string;
-  name: string;
-  slug: string;
-  image: string;
-  subcategories?: {
-    id: string;
-    name: string;
-    categoryId: string;
-  }[];
-  className?: string;
-}
-
-export interface TopCategoriesSectionProps {
-  categories: TopCategory[];
-}
-
 // ==========================================
 // 2. ТОВАРЫ И СПЕЦПРЕДЛОЖЕНИЯ
 // ==========================================
@@ -45,10 +28,6 @@ export interface SpecialOffer {
   price: number;
   oldPrice?: number | null;
   image: string;
-}
-
-export interface SpecialOffersSectionProps {
-  products: SpecialOffer[];
 }
 
 export interface SpecialOffersQueryData {
@@ -65,8 +44,15 @@ export interface TopRatedProduct {
   rating: number;
 }
 
-export interface TopRatedSectionProps {
-  products: TopRatedProduct[];
+// Универсальный тип для любого товара в карусели
+export interface CarouselProduct {
+  id: string;
+  name: string;
+  slug: string;
+  price: number;
+  oldPrice?: number | null;
+  image: string;
+  rating?: number; // Опциональный — подходит и для SpecialOffer, и для ProductCardData
 }
 
 // ==========================================
@@ -76,39 +62,6 @@ export interface HomePageData {
   specialOffers: SpecialOffer[];
   topRated: TopRatedProduct[];
   topCategories: TopCategory[];
-}
-
-// ==========================================
-// 4. БАННЕРЫ
-// ==========================================
-export interface StaticBannerProps {
-  title: string;
-  subtitle?: string;
-  imageUrl: string;
-  linkHref?: string;
-  buttonText?: string;
-  titleColor?: string;
-  align?: "left" | "center" | "right";
-  overlayOpacity?: number;
-  className?: string;
-  usePlayfair?: boolean;
-}
-
-export interface PromoBannerProps {
-  title: string;
-  subtitle?: string;
-  imageUrl: string;
-  imageUrl_1024?: string;
-  imageUrl_768?: string;
-  imageUrl_511?: string;
-  linkHref?: string;
-  buttonText?: string;
-  className?: string;
-  isPriority?: boolean;
-  id?: string | number;
-  titleColor?: string;
-  usePlayfairForTitle?: boolean;
-  subtitleColor?: string;
 }
 
 // ==========================================
@@ -139,12 +92,6 @@ export interface RegisterMutationData {
 }
 
 export type AuthMode = "login" | "register";
-
-export interface AuthModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  initialMode?: AuthMode;
-}
 
 export interface ApolloErrorLike {
   graphQLErrors?: { message: string; extensions?: { code?: string } }[];
@@ -216,36 +163,37 @@ export interface ProductCardData {
   rating: number;
 }
 
-export interface ProductCardProps {
-  id: string;
-  name: string;
-  slug: string;
-  price: number;
-  oldPrice?: number | null;
-  image: string;
-
-  rating?: number;
-
-  showOldPrice?: boolean;
-  className?: string;
-}
-
-export interface ProductFullData extends ProductCardData {
-  description?: string | null;
-  fullDescription?: string | null;
-  images: string[];
-  material?: string | null;
-  color?: string | null;
-  warranty?: string | null;
-  inStock: boolean;
-  reviewCount: number;
+export interface ProductWithCategory extends Product {
   category?: {
+    id: string;
     name: string;
+    slug: string;
   } | null;
 }
 
 export interface GetProductBySlugQuery {
-  productBySlug: ProductFullData | null;
+  productBySlug: ProductWithCategory | null;
 }
 
+export interface SimilarProductsQuery {
+  productsByCategory: ProductCardData[];
+}
 
+export interface CartItemType {
+  id: string;
+  quantity: number;
+  totalPrice: number;
+  product: {
+    id: string;
+    name: string;
+    slug: string;
+    price: number;
+    image: string;
+    inStock: boolean;
+  };
+}
+
+export interface CartType {
+  items: CartItemType[];
+  totalAmount: number;
+}

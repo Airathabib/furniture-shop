@@ -90,18 +90,41 @@ export const GET_PRODUCT_BY_SLUG = gql`
       id
       name
       slug
+      sku
+      description
+      fullDescription
+      collection
+      size
+      configuration
+      color
+      material
+      warranty
       price
       oldPrice
       image
       images
-      description
-      fullDescription
-      warranty
-      material
-      color
+      inStock
+      rating
+      reviewCount
       category {
+        id
         name
+        slug
       }
+    }
+  }
+`;
+
+export const GET_SIMILAR_PRODUCTS = gql`
+  query GetSimilarProducts($slug: String!, $limit: Int) {
+    productsByCategory(slug: $slug, limit: $limit) {
+      id
+      name
+      slug
+      price
+      oldPrice
+      image
+      rating
     }
   }
 `;
@@ -154,6 +177,8 @@ export const GET_PRODUCTS = gql`
     $minPrice: Float
     $maxPrice: Float
     $discountFilters: [String!]
+    $colorFilters: [String!]
+    $search: String
   ) {
     products(
       limit: $limit
@@ -161,6 +186,8 @@ export const GET_PRODUCTS = gql`
       minPrice: $minPrice
       maxPrice: $maxPrice
       discountFilters: $discountFilters
+      colorFilters: $colorFilters
+			 search: $search
     ) {
       id
       name
@@ -169,6 +196,129 @@ export const GET_PRODUCTS = gql`
       oldPrice
       image
       rating
+    }
+  }
+`;
+
+export const CREATE_QUICK_ORDER = gql`
+  mutation CreateQuickOrder($input: QuickOrderDto!) {
+    quickOrder(input: $input) {
+      id
+      orderNumber
+      status
+      total
+    }
+  }
+`;
+
+export const GET_CART = gql`
+  query GetCart {
+    getCart {
+      totalAmount
+      items {
+        id
+        quantity
+        totalPrice
+        product {
+          id
+          name
+          slug
+          price
+          image
+          inStock
+        }
+      }
+    }
+  }
+`;
+
+export const ADD_TO_CART = gql`
+  mutation AddToCart($input: AddToCartDto!) {
+    addToCart(input: $input) {
+      totalAmount
+      items {
+        id
+        quantity
+        totalPrice
+        product {
+          id
+          name
+          slug
+          price
+          image
+        }
+      }
+    }
+  }
+`;
+
+export const UPDATE_CART_ITEM = gql`
+  mutation UpdateCartItem($input: UpdateCartItemDto!) {
+    updateCartItem(input: $input) {
+      totalAmount
+      items {
+        id
+        quantity
+        totalPrice
+        product {
+          id
+          name
+          slug
+          price
+          image
+        }
+      }
+    }
+  }
+`;
+
+export const REMOVE_FROM_CART = gql`
+  mutation RemoveFromCart($productId: String!) {
+    removeFromCart(productId: $productId) {
+      totalAmount
+      items {
+        id
+        quantity
+        totalPrice
+        product {
+          id
+          name
+          slug
+          price
+          image
+        }
+      }
+    }
+  }
+`;
+
+export const CLEAR_CART = gql`
+  mutation ClearCart {
+    clearCart {
+      totalAmount
+      items {
+        id
+        quantity
+        totalPrice
+        product {
+          id
+          name
+          slug
+          price
+          image
+        }
+      }
+    }
+  }
+`;
+
+export const CHECKOUT = gql`
+  mutation Checkout($input: CheckoutDto!) {
+    checkout(input: $input) {
+      id
+      orderNumber
+      total
+      status
     }
   }
 `;

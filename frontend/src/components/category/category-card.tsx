@@ -2,9 +2,21 @@ import Link from "next/link";
 import Image from "next/image";
 import { ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { CategoryCardProps } from "@/types/types";
 import { TypographyH3 } from "../ui/typography-h3";
 import { Button } from "../ui/button"; // Укажи правильный путь к твоему компоненту Button
+
+interface CategoryCardProps {
+  id: string;
+  name: string;
+  slug: string;
+  image: string;
+  subcategories?: {
+    id: string;
+    name: string;
+    categoryId: string;
+  }[];
+  className?: string;
+}
 
 export function CategoryCard({
   name,

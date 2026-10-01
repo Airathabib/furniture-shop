@@ -1,13 +1,14 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 const NAV_LINKS = [
-  { label: 'О компании', href: '/about' },
-  { label: 'Гарантия и возврат', href: '/warranty' },
-  { label: 'Корпоративным клиентам', href: '/corporate' },
-  { label: 'Дизайн-решение', href: '/design' },
+  { label: "О компании", href: "/about" },
+  { label: "Гарантия и возврат", href: "/warranty" },
+  { label: "Корпоративным клиентам", href: "/corporate" },
+  { label: "Дизайн-решение", href: "/design" },
+  { label: "Сотрудничество", href: "/cooperation" },
 ] as const;
 
 export function TopLinks() {
@@ -15,8 +16,8 @@ export function TopLinks() {
 
   return (
     <nav
-      className='flex items-center gap-8'
-      aria-label='Дополнительная навигация'
+      className="flex items-center gap-8"
+      aria-label="Дополнительная навигация"
     >
       {NAV_LINKS.map((link) => {
         const isActive = pathname === link.href;
@@ -26,8 +27,8 @@ export function TopLinks() {
             href={link.href}
             className={`text-sm transition-colors focus-brand rounded-sm ${
               isActive
-                ? 'text-brand font-medium'
-                : 'text-muted-foreground hover:text-brand'
+                ? "text-brand font-medium"
+                : "text-muted-foreground hover:text-brand"
             }`}
           >
             {link.label}

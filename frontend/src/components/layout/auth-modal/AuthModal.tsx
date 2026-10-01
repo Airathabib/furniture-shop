@@ -20,11 +20,18 @@ import { REGISTER_MUTATION } from '@/constants/constants';
 import { LOGIN_MUTATION } from '@/graphql/mutations';
 import {
   ApolloErrorLike,
-  AuthModalProps,
   AuthMode,
   LoginMutationData,
   RegisterMutationData,
 } from '@/types/types';
+
+
+export interface AuthModalProps {
+	isOpen: boolean;
+	onClose: () => void;
+	initialMode?: AuthMode;
+}
+
 
 export function AuthModal({
   isOpen,

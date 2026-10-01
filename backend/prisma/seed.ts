@@ -1870,13 +1870,13 @@ async function main() {
     },
   ];
 
-  // ✅ Правильно: проходим по массиву и добавляем discountAmount
+  //Правильно: проходим по массиву и добавляем discountAmount
   const productsWithDiscounts = productsData.map((product) => ({
     ...product,
     discountAmount: calculateDiscount(product.price, product.oldPrice),
   }));
 
-  // ✅ Правильно: отправляем в базу обработанный массив
+  // Правильно: отправляем в базу обработанный массив
   await prisma.product.createMany({
     data: productsWithDiscounts,
   });
@@ -1884,7 +1884,7 @@ async function main() {
   console.log(
     `✅ Создано ${productsWithDiscounts.length} товаров с рассчитанными скидками`,
   );
-} // <--- ЭТА СКОБКА ЗАКРЫВАЕТ async function main()
+}
 
 // ✅ Вызов main() должен быть СНАРУЖИ функции
 main()

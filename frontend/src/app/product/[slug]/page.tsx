@@ -1,12 +1,31 @@
 import { getServerApolloClient } from "@/lib/apollo-client.server";
-import Image from "next/image";
 import { notFound } from "next/navigation";
 import { Container } from "@/components/ui/container";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { BackButton } from "@/components/ui/back-button";
-import { GET_PRODUCT_BY_SLUG } from "@/constants/constants";
-import { GetProductBySlugQuery } from "@/types/types";
+import { Star } from "lucide-react";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import {
+  GET_PRODUCT_BY_SLUG,
+  GET_SIMILAR_PRODUCTS,
+} from "@/constants/constants";
+import { GetProductBySlugQuery, SimilarProductsQuery } from "@/types/types";
+import { TypographyH2 } from "@/components/ui/typography-h2";
+import { SimilarProductsCarousel } from "@/components/carousel/similar-products-carousel";
+import { ProductGallery } from "@/components/product/product-gallery";
+import {
+  formatPrice,
+  getDiscountAmount,
+  getSimilarProducts,
+  parseSize,
+} from "@/utils/product.utils";
+import { QuickBuySection } from "@/components/product/quick-buy-section";
 
 interface ProductPageProps {
   params: Promise<{ slug: string }>;
@@ -14,7 +33,6 @@ interface ProductPageProps {
 
 export default async function ProductPage({ params }: ProductPageProps) {
   const { slug } = await params;
-
   const client = await getServerApolloClient();
 
   const { data } = await client.query<GetProductBySlugQuery>({
@@ -28,69 +46,95 @@ export default async function ProductPage({ params }: ProductPageProps) {
     notFound();
   }
 
-  const formatPrice = (price: number) =>
-    new Intl.NumberFormat("ru-RU").format(price) + " руб";
+  const { data: similarData } = await client.query<SimilarProductsQuery>({
+    query: GET_SIMILAR_PRODUCTS,
+    variables: {
+      slug: product.category?.slug || "",
+      limit: 12,
+    },
+  });
 
-  const discount =
-    product.oldPrice && product.oldPrice > product.price
-      ? Math.round(product.oldPrice - product.price)
-      : 0;
+  const similarProducts = getSimilarProducts(
+    similarData?.productsByCategory,
+    product.id,
+    12,
+  );
+
+  const discount = getDiscountAmount(product.price, product.oldPrice);
+
+  const { length, width, height } = parseSize(product.size);
 
   return (
     <Container className="py-8 md:py-12">
-      <BackButton />
+      <Breadcrumb className="mb-6">
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/">Главная</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />{" "}
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/catalog">Каталог</BreadcrumbLink>
+          </BreadcrumbItem>{" "}
+          {product.category && (
+            <>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbLink
+                  href={`/catalog?category=${product.category.slug}`}
+                >
+                  {product.category.name}
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+            </>
+          )}
+          <BreadcrumbSeparator />{" "}
+          <BreadcrumbItem>
+            <BreadcrumbPage>{product.name}</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+
+      <BackButton className="mb-4" />
 
       <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">
-        <div className="space-y-4">
-          <div className="relative aspect-square bg-muted/30 rounded-xl overflow-hidden border border-border">
-            <Image
-              src={product.image}
-              alt={product.name}
-              fill
-              className="object-contain p-4 md:p-8"
-              sizes="(max-width: 768px) 100vw, 50vw"
-              priority
-            />
-            {discount > 0 && (
-              <Badge className="absolute top-4 left-4 bg-orange-500 hover:bg-orange-600 text-white text-sm px-3 py-1">
-                Выгода {formatPrice(discount)}
-              </Badge>
-            )}
-          </div>
-
-          {product.images && product.images.length > 0 && (
-            <div className="grid grid-cols-4 gap-3">
-              {[product.image, ...product.images]
-                .slice(0, 4)
-                .map((img, index) => (
-                  <div
-                    key={index}
-                    className="relative aspect-square bg-muted/30 rounded-lg overflow-hidden border border-border cursor-pointer hover:border-brand transition-colors"
-                  >
-                    <Image
-                      src={img}
-                      alt={`${product.name} вид ${index + 1}`}
-                      fill
-                      className="object-contain p-2"
-                      sizes="25vw"
-                    />
-                  </div>
-                ))}
-            </div>
-          )}
-        </div>
+        <ProductGallery
+          mainImage={product.image}
+          images={product.images || []}
+          productName={product.name}
+          discount={discount}
+        />
 
         <div className="flex flex-col">
-          <p className="text-sm text-muted-foreground mb-2 uppercase tracking-wide">
-            {product.category?.name || "Мебель"}
+          {product.rating > 0 && (
+            <div className="flex items-center gap-1 mb-2">
+              <Star className="w-4 h-4 fill-orange-500 text-orange-500" />
+              <span className="text-sm font-medium text-foreground">
+                {product.rating.toFixed(1)}
+              </span>
+              {product.reviewCount > 0 && (
+                <span className="text-sm text-muted-foreground">
+                  ({product.reviewCount} отзывов)
+                </span>
+              )}
+            </div>
+          )}
+
+          <TypographyH2 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
+            {product.name}
+          </TypographyH2>
+
+          <p className="text-sm text-muted-foreground mb-6">
+            {[
+              product.size && `Размер: ${product.size} см`,
+              product.color && `Цвет: ${product.color}`,
+              product.material && `(${product.material})`,
+            ]
+              .filter(Boolean)
+              .join(" ")}
           </p>
 
-          <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-            {product.name}
-          </h1>
-
           <div className="flex items-baseline gap-4 mb-6">
-            <span className="text-3xl font-bold text-orange-500">
+            <span className="text-3xl font-bold text-foreground">
               {formatPrice(product.price)}
             </span>
             {product.oldPrice && product.oldPrice > product.price && (
@@ -100,71 +144,88 @@ export default async function ProductPage({ params }: ProductPageProps) {
             )}
           </div>
 
-          {product.description && (
-            <p className="text-muted-foreground mb-8 leading-relaxed text-lg">
-              {product.description}
-            </p>
-          )}
+          <QuickBuySection productId={product.id} productName={product.name} />
 
-          {(product.material || product.color || product.warranty) && (
-            <div className="grid grid-cols-2 gap-4 mb-8 p-4 bg-muted/30 rounded-lg border border-border">
+          <div className="border-t border-border pt-6">
+            <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm">
+              {product.warranty && (
+                <>
+                  <span className="text-muted-foreground">Гарантия</span>
+                  <span className="text-foreground">{product.warranty}</span>
+                </>
+              )}
+              {product.sku && (
+                <>
+                  <span className="text-muted-foreground">Артикул</span>
+                  <span className="text-foreground">{product.sku}</span>
+                </>
+              )}
+              {length && (
+                <>
+                  <span className="text-muted-foreground">Длина</span>
+                  <span className="text-foreground">{length} см</span>
+                </>
+              )}
+              {height && (
+                <>
+                  <span className="text-muted-foreground">Высота</span>
+                  <span className="text-foreground">{height} см</span>
+                </>
+              )}
+              {width && (
+                <>
+                  <span className="text-muted-foreground">Глубина</span>
+                  <span className="text-foreground">{width} см</span>
+                </>
+              )}
+              {product.configuration && (
+                <>
+                  <span className="text-muted-foreground">Механизм</span>
+                  <span className="text-foreground">
+                    {product.configuration}
+                  </span>
+                </>
+              )}
               {product.material && (
-                <div>
-                  <p className="text-xs text-muted-foreground">Материал</p>
-                  <p className="font-medium text-foreground">
-                    {product.material}
-                  </p>
-                </div>
+                <>
+                  <span className="text-muted-foreground">Тип обивки</span>
+                  <span className="text-foreground">{product.material}</span>
+                </>
               )}
               {product.color && (
-                <div>
-                  <p className="text-xs text-muted-foreground">Цвет</p>
-                  <p className="font-medium text-foreground">{product.color}</p>
-                </div>
+                <>
+                  <span className="text-muted-foreground">Цвет</span>
+                  <span className="text-foreground">{product.color}</span>
+                </>
               )}
-              {product.warranty && (
-                <div>
-                  <p className="text-xs text-muted-foreground">Гарантия</p>
-                  <p className="font-medium text-foreground">
-                    {product.warranty}
-                  </p>
-                </div>
+              {product.category && (
+                <>
+                  <span className="text-muted-foreground">Категория</span>
+                  <span className="text-foreground">
+                    {product.category.name}
+                  </span>
+                </>
               )}
+              <span className="text-muted-foreground">Возврат</span>
+              <span className="text-foreground">Условия</span>
             </div>
-          )}
-
-          {/* Кнопки действий */}
-          <div className="flex flex-col sm:flex-row gap-4 mt-auto">
-            <Button
-              size="lg"
-              className="flex-1 h-12 text-base bg-brand hover:bg-brand-hover text-white transition-colors focus-visible:ring-brand-focus"
-            >
-              Добавить в корзину
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              className="flex-1 h-12 text-base border-brand text-brand hover:bg-brand hover:text-white transition-colors focus-visible:ring-brand-focus"
-            >
-              Купить в 1 клик
-            </Button>
           </div>
         </div>
       </div>
 
-      {/* Подробное описание (внизу страницы) */}
       {product.fullDescription && (
         <div className="mt-16 border-t border-border pt-8">
-          <h2 className="text-2xl font-bold mb-6 text-foreground">
-            Подробное описание
-          </h2>
-          <div
-            className="prose prose-sm md:prose-base max-w-none text-muted-foreground leading-relaxed"
-            dangerouslySetInnerHTML={{
-              __html: product.fullDescription.replace(/\n/g, "<br>"),
-            }}
-          />
+          <TypographyH2 className="text-2xl font-bold mb-4 text-foreground">
+            {product.configuration || "Описание"}
+          </TypographyH2>
+          <div className="prose prose-sm md:prose-base max-w-none text-muted-foreground leading-relaxed">
+            <p>{product.fullDescription}</p>
+          </div>
         </div>
+      )}
+
+      {similarProducts.length > 0 && (
+        <SimilarProductsCarousel products={similarProducts} />
       )}
     </Container>
   );

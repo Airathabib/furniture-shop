@@ -134,6 +134,9 @@ type Mutation {
   """Выйти из системы"""
   logout: LogoutResponse!
 
+  """Оформить быстрый заказ в 1 клик"""
+  quickOrder(input: QuickOrderDto!): OrderModel!
+
   """Обновить access token"""
   refresh: AuthResponse!
   register(input: RegisterDto!): AuthResponse!
@@ -288,7 +291,7 @@ type Query {
   productReviews(productId: ID!): [ReviewModel!]!
 
   """Получить товары с фильтрацией"""
-  products(categorySlugs: [String!], discountFilters: [String!], limit: Int! = 50, maxPrice: Float, minPrice: Float): [Product!]!
+  products(categorySlugs: [String!], colorFilters: [String!], discountFilters: [String!], limit: Int! = 50, maxPrice: Float, minPrice: Float, search: String): [Product!]!
 
   """Получить все товары конкретной категории"""
   productsByCategory(limit: Int! = 50, slug: String!): [Product!]!
@@ -304,6 +307,17 @@ type Query {
 
   """Получить список избранного текущего пользователя"""
   wishlist(input: WishlistQueryDto): WishlistResponse!
+}
+
+input QuickOrderDto {
+  """Имя покупателя"""
+  name: String!
+
+  """Номер телефона"""
+  phone: String!
+
+  """ID товара"""
+  productId: String!
 }
 
 input RegisterDto {

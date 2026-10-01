@@ -1,6 +1,6 @@
-@import 'tailwindcss';
-@import 'tw-animate-css';
-@import 'shadcn/tailwind.css';
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -42,6 +42,8 @@
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
 
+  --color-icon: var(--icon-primary);
+
   /* --- ВАШИ БРЕНДОВЫЕ ЦВЕТА --- */
   --color-brand: var(--brand);
   --color-brand-hover: var(--brand-hover);
@@ -59,89 +61,90 @@
 }
 
 :root {
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.141 0.005 285.823);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.141 0.005 285.823);
-  --primary: oklch(0.518 0.253 323.949);
-  --primary-foreground: oklch(0.977 0.017 320.058);
-  --secondary: oklch(0.967 0.001 286.375);
-  --secondary-foreground: oklch(0.21 0.006 285.885);
-  --muted: oklch(0.967 0.001 286.375);
-  --muted-foreground: oklch(0.552 0.016 285.938);
-  --card-bg: oklch(0.96 0 0);
-  --accent: oklch(0.967 0.001 286.375);
-  --accent-foreground: oklch(0.21 0.006 285.885);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.92 0.004 286.32);
-  --input: oklch(0.92 0.004 286.32);
-  --ring: oklch(0.705 0.015 286.067);
-  --chart-1: oklch(0.871 0.006 286.286);
-  --chart-2: oklch(0.552 0.016 285.938);
-  --chart-3: oklch(0.442 0.017 285.786);
-  --chart-4: oklch(0.37 0.013 285.805);
-  --chart-5: oklch(0.274 0.006 286.033);
-  --color-banner-title: oklch(51.56% 0.0025 15.946);
+  --card: rgb(255, 255, 255);
+  --card-foreground: rgb(9, 9, 11);
+  --popover: rgb(255, 255, 255);
+  --popover-foreground: rgb(9, 9, 11);
+  --primary: rgb(168, 0, 183);
+  --primary-foreground: rgb(253, 244, 255);
+  --secondary: rgb(244, 244, 245);
+  --secondary-foreground: rgb(24, 24, 27);
+  --muted: rgb(244, 244, 245);
+  --muted-foreground: rgb(113, 113, 123);
+  --card-bg: rgb(242, 242, 242);
+  --accent: rgb(244, 244, 245);
+  --accent-foreground: rgb(24, 24, 27);
+  --destructive: rgb(231, 0, 11);
+  --border: rgb(228, 228, 231);
+  --input: rgb(228, 228, 231);
+  --ring: rgb(159, 159, 169);
+  --chart-1: rgb(212, 212, 216);
+  --chart-2: rgb(113, 113, 123);
+  --chart-3: rgb(82, 82, 92);
+  --chart-4: rgb(63, 63, 70);
+  --chart-5: rgb(39, 39, 42);
+  --color-banner-title: rgb(105, 103, 103);
   --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.141 0.005 285.823);
-  --sidebar-primary: oklch(0.591 0.293 322.896);
-  --sidebar-primary-foreground: oklch(0.977 0.017 320.058);
-  --sidebar-accent: oklch(0.967 0.001 286.375);
-  --sidebar-accent-foreground: oklch(0.21 0.006 285.885);
-  --sidebar-border: oklch(0.92 0.004 286.32);
-  --sidebar-ring: oklch(0.705 0.015 286.067);
-  --background: oklch(97.315% 0.00011 271.152);
-  --foreground: oklch(0.141 0.005 285.823);
+  --sidebar: rgb(250, 250, 250);
+  --sidebar-foreground: rgb(9, 9, 11);
+  --sidebar-primary: rgb(200, 0, 222);
+  --sidebar-primary-foreground: rgb(253, 244, 255);
+  --sidebar-accent: rgb(244, 244, 245);
+  --sidebar-accent-foreground: rgb(24, 24, 27);
+  --sidebar-border: rgb(228, 228, 231);
+  --sidebar-ring: rgb(159, 159, 169);
+  --background: rgb(255, 255, 255);
+  --foreground: rgb(9, 9, 11);
+
+  --icon-primary: rgb(255, 134, 47);
 
   /* --- БРЕНДОВЫЕ ЦВЕТА (СВЕТЛАЯ ТЕМА) --- */
-  --brand: oklch(0.591 0.263 303.9); /* #A65CF0 */
-  --brand-hover: oklch(0.731 0.153 303.9); /* #C998FB */
-  --brand-focus: oklch(0.731 0.153 303.9); /* #C998FB */
-  --brand-disabled: oklch(0.935 0 0); /* #EAEAEA */
+  --brand: rgb(161, 57, 248); /* #A65CF0 */
+  --brand-hover: rgb(189, 142, 245); /* #C998FB */
+  --brand-focus: rgb(189, 142, 245); /* #C998FB */
+  --brand-disabled: rgb(233, 233, 233); /* #EAEAEA */
 }
 
 .dark {
-  --background: oklch(0.141 0.005 285.823);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.21 0.006 285.885);
-  --card-foreground: oklch(0.985 0 0);
-  --card-bg: oklch(0.25 0 0);
-  --popover: oklch(0.21 0.006 285.885);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.452 0.211 324.591);
-  --primary-foreground: oklch(0.977 0.017 320.058);
-  --secondary: oklch(0.274 0.006 286.033);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.274 0.006 286.033);
-  --muted-foreground: oklch(0.705 0.015 286.067);
-  --accent: oklch(0.274 0.006 286.033);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.552 0.016 285.938);
-  --chart-1: oklch(0.871 0.006 286.286);
-  --chart-2: oklch(0.552 0.016 285.938);
-  --chart-3: oklch(0.442 0.017 285.786);
-  --chart-4: oklch(0.37 0.013 285.805);
-  --chart-5: oklch(0.274 0.006 286.033);
-  --sidebar: oklch(0.21 0.006 285.885);
-  --color-banner-title: oklch(0.827 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.667 0.295 322.15);
-  --sidebar-primary-foreground: oklch(0.977 0.017 320.058);
-  --sidebar-accent: oklch(0.274 0.006 286.033);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.552 0.016 285.938);
+  --background: rgb(9, 9, 11);
+  --foreground: rgb(250, 250, 250);
+  --card: rgb(24, 24, 27);
+  --card-foreground: rgb(250, 250, 250);
+  --card-bg: rgb(34, 34, 34);
+  --popover: rgb(24, 24, 27);
+  --popover-foreground: rgb(250, 250, 250);
+  --primary: rgb(138, 1, 148);
+  --primary-foreground: rgb(253, 244, 255);
+  --secondary: #27272a;
+  --secondary-foreground: rgb(250, 250, 250);
+  --muted: #27272a --muted-foreground: rgb(159, 159, 169);
+  --accent: rgb(39, 39, 42);
+  --accent-foreground: rgb(219, 173, 173);
+  --destructive: rgb(255, 100, 103);
+  --border: rgba(255, 255, 255, 0.1);
+  --input: rgba(255, 255, 255, 0.15);
+  --ring: rgb(113, 113, 123);
+  --chart-1: rgb(212, 212, 216);
+  --chart-2: rgb(113, 113, 123);
+  --chart-3: rgb(82, 82, 92);
+  --chart-4: rgb(63, 63, 70);
+  --chart-5: rgb(39, 39, 42);
+  --sidebar: rgb(24, 24, 27);
+  --color-banner-title: rgb(198, 198, 198);
+  --sidebar-foreground: rgb(250, 250, 250);
+  --sidebar-primary: rgb(225, 42, 251);
+  --sidebar-primary-foreground: rgb(253, 244, 255);
+  --sidebar-accent: rgb(39, 39, 42);
+  --sidebar-accent-foreground: rgb(250, 250, 250);
+  --sidebar-border: rgba(255, 255, 255, 0.1);
+  --sidebar-ring: rgb(113, 113, 123);
 
   /* --- БРЕНДОВЫЕ ЦВЕТА (ТЕМНАЯ ТЕМА) --- */
 
-  --brand: oklch(0.671 0.203 303.9);
-  --brand-hover: oklch(0.801 0.123 303.9);
+  --brand: rgb(177, 110, 249);
+  --brand-hover: rgb(207, 170, 255);
   --brand-focus: oklch(0.801 0.123 303.9);
-  --brand-disabled: oklch(0.321 0.016 285.8);
+  --brand-disabled: rgb(50, 50, 59);
 }
 
 @layer utilities {

@@ -31,15 +31,17 @@ const DISCOUNTS = [
 ];
 
 const COLORS = [
-  { id: "brown", label: "Коричневый" },
-  { id: "black", label: "Черный" },
-  { id: "beige", label: "Бежевый" },
-  { id: "gray", label: "Серый" },
-  { id: "white", label: "Белый" },
-  { id: "blue", label: "Синий" },
-  { id: "orange", label: "Оранжевый" },
-  { id: "yellow", label: "Желтый" },
-  { id: "green", label: "Зеленый" },
+  { id: "brown", label: "Коричневый / Дерево (Дуб, Орех)" },
+  { id: "black", label: "Черный / Антрацит" },
+  { id: "beige", label: "Бежевый / Песочный / Капучино" },
+  { id: "gray", label: "Серый / Графит / Серебро" },
+  { id: "white", label: "Белый / Шагрень / Молочный" },
+  { id: "blue", label: "Синий / Голубой / Аквамарин" },
+  { id: "orange", label: "Оранжевый / Терракотовый" },
+  { id: "yellow", label: "Желтый / Горчичный" },
+  { id: "green", label: "Зеленый / Оливковый / Мятный" },
+  { id: "gold", label: "Золотой / Латунь / Бронза" }, // ✅ Добавили
+  { id: "multicolor", label: "Мультиколор / Разноцветный" }, // ✅ Добавили
 ];
 
 export function Filters({ categories }: FiltersProps) {

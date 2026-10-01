@@ -49,7 +49,10 @@ export class ProductResolver {
     @Args('minPrice', { type: () => Float, nullable: true }) minPrice?: number,
     @Args('maxPrice', { type: () => Float, nullable: true }) maxPrice?: number,
     @Args('discountFilters', { type: () => [String], nullable: true })
-    discountFilters?: string[], // ✅
+    discountFilters?: string[],
+    @Args('colorFilters', { type: () => [String], nullable: true })
+    colorFilters?: string[],
+    @Args('search', { type: () => String, nullable: true }) search?: string,
   ): Promise<Product[]> {
     return this.productService.findAll(
       limit,
@@ -57,6 +60,8 @@ export class ProductResolver {
       minPrice,
       maxPrice,
       discountFilters,
+      colorFilters,
+      search,
     );
   }
 

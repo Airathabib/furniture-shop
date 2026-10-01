@@ -1,7 +1,11 @@
 import { Container } from "@/components/ui/container";
 import { TypographyH2 } from "../ui/typography-h2";
 import { CategoryCard } from "./category-card";
-import { TopCategoriesSectionProps } from "@/types/types";
+import { TopCategory } from "@/types/types";
+
+export interface TopCategoriesSectionProps {
+  categories: TopCategory[];
+}
 
 export function TopCategoriesSection({
   categories,

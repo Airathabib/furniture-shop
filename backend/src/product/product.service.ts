@@ -1,73 +1,24 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { Prisma } from 'generated/prisma/client';
 
 import { CreateProductDto } from './dto/create-product.input';
 import { UpdateProductDto } from './dto/update-product.input';
 import { PrismaService } from '../prisma/prisma.service';
-import { Product } from './model/product.model';
+import { calculateDiscount, generateSafeSlug } from 'src/utils/product.utils';
+
+type ProductWithCategory = Prisma.ProductGetPayload<{
+  include: { category: true };
+}>;
 
 @Injectable()
 export class ProductService {
   constructor(private prisma: PrismaService) {}
-
-  private generateSafeSlug(text: string): string {
-    const translitMap: Record<string, string> = {
-      а: 'a',
-      б: 'b',
-      в: 'v',
-      г: 'g',
-      д: 'd',
-      е: 'e',
-      ё: 'yo',
-      ж: 'zh',
-      з: 'z',
-      и: 'i',
-      й: 'y',
-      к: 'k',
-      л: 'l',
-      м: 'm',
-      н: 'n',
-      о: 'o',
-      п: 'p',
-      р: 'r',
-      с: 's',
-      т: 't',
-      у: 'u',
-      ф: 'f',
-      х: 'kh',
-      ц: 'ts',
-      ч: 'ch',
-      ш: 'sh',
-      щ: 'sch',
-      ъ: '',
-      ы: 'y',
-      ь: '',
-      э: 'e',
-      ю: 'yu',
-      я: 'ya',
-      ' ': '-',
-      '"': '',
-      "'": '',
-    };
-
-    return text
-      .toLowerCase()
-      .split('')
-      .map((char) => translitMap[char] || char)
-      .join('')
-      .replace(/[^a-z0-9-]/g, '')
-      .replace(/-+/g, '-')
-      .replace(/^-|-$/g, '');
-  }
-
-  private calculateDiscount(
-    price: number,
-    oldPrice?: number | null,
-  ): number | null {
-    if (oldPrice && oldPrice > price) {
-      return Math.round(oldPrice - price);
-    }
-    return null;
+  private getSafeLimit(limit: number): number {
+    return Math.min(Math.max(limit, 1), 100);
   }
 
   async findAll(
@@ -76,29 +27,73 @@ export class ProductService {
     minPrice?: number,
     maxPrice?: number,
     discountFilters?: string[],
-  ): Promise<Product[]> {
-    // 1. Базовый объект where
-    const where: any = {
-      ...(categorySlugs &&
-        categorySlugs.length > 0 && {
-          category: { slug: { in: categorySlugs } },
-        }),
-    };
+    colorFilters?: string[],
+    search?: string, // ✅ 1. Добавлен параметр поиска
+  ): Promise<ProductWithCategory[]> {
+    const safeLimit = this.getSafeLimit(limit);
+    const where: Prisma.ProductWhereInput = {};
+    const andConditions: Prisma.ProductWhereInput[] = [];
 
-    // ✅ 2. ПРАВИЛЬНЫЙ СПОСОБ: собираем условия цены в ОДИН объект
-    const priceFilter: any = {};
-    if (minPrice !== undefined) priceFilter.gte = minPrice; // Greater Than or Equal (>=)
-    if (maxPrice !== undefined) priceFilter.lte = maxPrice; // Less Than or Equal (<=)
-
-    // Добавляем в where только если есть хотя бы одно условие по цене
-    if (Object.keys(priceFilter).length > 0) {
-      where.price = priceFilter;
+    // ✅ 2. Условие поиска по названию (нечувствительно к регистру)
+    if (search && search.trim() !== '') {
+      andConditions.push({
+        name: {
+          contains: search.trim(),
+          mode: 'insensitive' as const,
+        },
+      });
     }
 
-    // 3. Фильтр по скидкам
-    if (discountFilters && discountFilters.length > 0) {
-      const discountConditions: any[] = [];
+    // 3. Фильтр по категориям
+    if (categorySlugs?.length) {
+      andConditions.push({ category: { slug: { in: categorySlugs } } });
+    }
 
+    // 4. Фильтр по цене
+    if (minPrice !== undefined || maxPrice !== undefined) {
+      andConditions.push({
+        price: {
+          ...(minPrice !== undefined && { gte: minPrice }),
+          ...(maxPrice !== undefined && { lte: maxPrice }),
+        },
+      });
+    }
+
+    // 5. Фильтр по цвету
+    if (colorFilters?.length) {
+      const colorMap: Record<string, string[]> = {
+        brown: ['коричнев', 'дуб', 'орех', 'венге', 'каштан', 'бук'],
+        black: ['чёрн', 'черн', 'антрацит'],
+        beige: ['бежев', 'песочн', 'капучин', 'кремов', 'слонов'],
+        gray: ['сер', 'графит', 'серебр'],
+        white: ['бел', 'шагрен', 'молочн'],
+        blue: ['син', 'голуб', 'аквамарин', 'бирюз'],
+        orange: ['оранж', 'рыж', 'терракот'],
+        yellow: ['желт', 'лимон', 'горчич'],
+        green: ['зелен', 'зелён', 'изумруд', 'мятн', 'олив'],
+        gold: ['золот', 'латун', 'бронз'],
+        multicolor: ['мультиколор', 'разноцвет', 'пестр', 'принт'],
+      };
+
+      const colorConditions: Prisma.ProductWhereInput[] = [];
+      for (const filterId of colorFilters) {
+        const keywords = colorMap[filterId];
+        if (keywords) {
+          colorConditions.push({
+            OR: keywords.map((keyword) => ({
+              color: { contains: keyword, mode: 'insensitive' as const },
+            })),
+          });
+        }
+      }
+      if (colorConditions.length > 0) {
+        andConditions.push({ OR: colorConditions });
+      }
+    }
+
+    // 6. Фильтр по скидкам
+    if (discountFilters?.length) {
+      const discountConditions: Prisma.ProductWhereInput[] = [];
       if (discountFilters.includes('more5000')) {
         discountConditions.push({ discountAmount: { gte: 5000 } });
       }
@@ -111,223 +106,198 @@ export class ProductService {
         });
       }
       if (discountFilters.includes('no-discount')) {
-        discountConditions.push({ discountAmount: { gt: 0 } });
+        discountConditions.push({
+          OR: [{ discountAmount: { lte: 0 } }, { discountAmount: null }],
+        });
       }
-
       if (discountConditions.length > 0) {
-        where.OR = discountConditions;
+        andConditions.push({ OR: discountConditions });
       }
     }
 
-    // 4. Выполняем запрос
+    // 7. Финальная сборка where
+    if (andConditions.length > 0) {
+      where.AND = andConditions;
+    }
+
+    // 8. Выполнение запроса
     return this.prisma.product.findMany({
       where,
-      take: limit,
-      orderBy: {
-        createdAt: 'desc',
-      },
-      include: {
-        category: true,
-      },
+      take: safeLimit,
+      orderBy: { createdAt: 'desc' },
+      include: { category: true },
     });
   }
 
-  async findOne(id: string) {
+  async findOne(id: string): Promise<ProductWithCategory> {
     const product = await this.prisma.product.findUnique({
-      where: {
-        id,
-      },
-      include: {
-        category: true,
-      },
+      where: { id },
+      include: { category: true },
     });
-
-    if (!product) {
-      throw new NotFoundException(`Product with ID ${id} not found`);
-    }
-
+    if (!product) throw new NotFoundException(`Товар с ID ${id} не найден`);
     return product;
   }
 
-  async findBySlug(slug: string) {
+  async findBySlug(slug: string): Promise<ProductWithCategory> {
     const product = await this.prisma.product.findUnique({
-      where: {
-        slug,
-      },
-      include: {
-        category: true,
-      },
+      where: { slug },
+      include: { category: true },
     });
-
-    if (!product) {
+    if (!product)
       throw new NotFoundException(`Товар с адресом "${slug}" не найден`);
-    }
-
     return product;
   }
 
-  async getSpecialOffers(limit: number = 10): Promise<Product[]> {
-    const products = await this.prisma.product.findMany({
-      where: {
-        oldPrice: {
-          not: null,
-        },
-        inStock: true,
-      },
-      include: {
-        category: true,
-      },
-      orderBy: {
-        updatedAt: 'desc',
-      },
-      take: limit * 2,
-    });
-
-    const withDiscount = products.filter(
-      (p) => p.oldPrice !== null && p.oldPrice > p.price,
-    );
-
-    return withDiscount.slice(0, limit);
-  }
-
-  async getTopRated(limit: number = 8): Promise<Product[]> {
+  async getSpecialOffers(limit: number = 10): Promise<ProductWithCategory[]> {
+    const safeLimit = this.getSafeLimit(limit);
     return this.prisma.product.findMany({
       where: {
         inStock: true,
-        rating: {
-          gt: 0,
-        },
+        discountAmount: { gt: 0 },
       },
-      include: {
-        category: true,
-      },
-      orderBy: {
-        rating: 'desc',
-      },
-      take: limit,
+      orderBy: [{ discountAmount: 'desc' }, { updatedAt: 'desc' }],
+      take: safeLimit,
+      include: { category: true },
     });
   }
 
-  async create(input: CreateProductDto) {
-    const rawSlug = input.slug || input.name;
-    let safeSlug = this.generateSafeSlug(rawSlug);
-    const discountAmount = this.calculateDiscount(input.price, input.oldPrice);
+  async getTopRated(limit: number = 8): Promise<ProductWithCategory[]> {
+    const safeLimit = this.getSafeLimit(limit);
+    return this.prisma.product.findMany({
+      where: { inStock: true, rating: { gt: 0 } },
+      orderBy: { rating: 'desc' },
+      take: safeLimit,
+      include: { category: true },
+    });
+  }
 
-    let counter = 1;
-    let isUnique = false;
+  async create(input: CreateProductDto): Promise<ProductWithCategory> {
+    const baseSlug = generateSafeSlug(input.slug || input.name);
+    const discountAmount = calculateDiscount(input.price, input.oldPrice);
 
-    while (!isUnique) {
-      const existingProduct = await this.prisma.product.findUnique({
-        where: { slug: safeSlug },
+    for (let counter = 0; counter < 100; counter++) {
+      const slug = counter === 0 ? baseSlug : `${baseSlug}-${counter}`;
+
+      try {
+        return await this.prisma.product.create({
+          data: {
+            ...input,
+            slug,
+            rating: 0,
+            reviewCount: 0,
+            discountAmount,
+          },
+          include: { category: true },
+        });
+      } catch (error) {
+        // ✅ FIX #1: Безопасная обработка ошибки уникальности (Race Condition)
+        if (
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.code === 'P2002'
+        ) {
+          continue;
+        }
+        throw error;
+      }
+    }
+    throw new ConflictException(
+      'Не удалось создать уникальный slug после 100 попыток',
+    );
+  }
+
+  async update(
+    id: string,
+    input: UpdateProductDto,
+  ): Promise<ProductWithCategory> {
+    await this.findOne(id);
+
+    const normalizedSlug =
+      input.slug !== undefined ? generateSafeSlug(input.slug) : undefined;
+
+    if (input.categoryId !== undefined) {
+      const category = await this.prisma.category.findUnique({
+        where: { id: input.categoryId },
       });
-
-      if (!existingProduct) {
-        isUnique = true; // Slug свободен, можно использовать
-      } else {
-        // Если занят, добавляем число: kreslo-agata-1, kreslo-agata-2 и т.д.
-        safeSlug = `${this.generateSafeSlug(input.name)}-${counter}`;
-        counter++;
+      if (!category) {
+        throw new NotFoundException(
+          `Категория с ID ${input.categoryId} не найдена`,
+        );
       }
     }
 
-    // 3. Создаем товар с гарантированно безопасным и уникальным slug
-    return this.prisma.product.create({
-      data: {
-        ...input,
-        slug: safeSlug, // <-- Перезаписываем slug на отформатированный
-        rating: 0,
-        reviewCount: 0,
-        discountAmount,
-      },
-      include: {
-        category: true,
-      },
-    });
-  }
-
-  async update(id: string, input: UpdateProductDto) {
-    // 1. Получаем текущий товар, чтобы использовать его цены как запасной вариант
-    const product = await this.findOne(id);
-
-    const {
-      categoryId,
-      name,
-      slug,
-      sku,
-      price,
-      oldPrice,
-      description,
-      collection,
-      size,
-      configuration,
-      color,
-      material,
-      fullDescription,
-      warranty,
-      image,
-      images,
-      inStock,
-    } = input;
-
-    // 2. Определяем актуальные цены для расчета (новые из input или старые из БД)
-    const currentPrice = price !== undefined ? price : product.price;
+    const currentPrice =
+      input.price !== undefined ? Number(input.price) : undefined;
     const currentOldPrice =
-      oldPrice !== undefined ? oldPrice : product.oldPrice;
+      input.oldPrice !== undefined ? Number(input.oldPrice) : undefined;
 
-    // 3. Рассчитываем новую сумму скидки
-    const discountAmount = this.calculateDiscount(
-      currentPrice,
-      currentOldPrice,
+    const product = await this.prisma.product.findUnique({
+      where: { id },
+      select: { price: true, oldPrice: true },
+    });
+    const priceForCalc = currentPrice ?? Number(product?.price ?? 0);
+    const oldPriceForCalc =
+      currentOldPrice !== undefined
+        ? currentOldPrice
+        : Number(product?.oldPrice ?? 0);
+
+    const discountAmount = calculateDiscount(
+      priceForCalc,
+      oldPriceForCalc || null,
     );
 
-    // 4. Формируем объект для обновления
     const data: Prisma.ProductUpdateInput = {
-      ...(name !== undefined && { name }),
-      ...(slug !== undefined && { slug }),
-      ...(sku !== undefined && { sku }),
-      ...(price !== undefined && { price }),
-      ...(oldPrice !== undefined && { oldPrice }),
-      ...(description !== undefined && { description }),
-      ...(fullDescription !== undefined && { fullDescription }),
-      ...(collection !== undefined && { collection }),
-      ...(size !== undefined && { size }),
-      ...(configuration !== undefined && { configuration }),
-      ...(color !== undefined && { color }),
-      ...(material !== undefined && { material }),
-      ...(warranty !== undefined && { warranty }),
-      ...(image !== undefined && { image }),
-      ...(images !== undefined && { images }),
-      ...(inStock !== undefined && { inStock }),
-      ...(categoryId !== undefined && {
-        category: {
-          connect: {
-            id: categoryId,
-          },
-        },
+      ...(input.name !== undefined && { name: input.name }),
+      ...(normalizedSlug !== undefined && { slug: normalizedSlug }),
+      ...(input.sku !== undefined && { sku: input.sku }),
+      ...(currentPrice !== undefined && { price: currentPrice }),
+      ...(currentOldPrice !== undefined && { oldPrice: currentOldPrice }),
+      ...(input.description !== undefined && {
+        description: input.description,
       }),
-
-      // ✅ 5. ВСЕГДА обновляем поле discountAmount.
-      // Prisma корректно обработает как число, так и null (если скидки нет)
-      discountAmount: discountAmount,
+      ...(input.fullDescription !== undefined && {
+        fullDescription: input.fullDescription,
+      }),
+      ...(input.collection !== undefined && { collection: input.collection }),
+      ...(input.size !== undefined && { size: input.size }),
+      ...(input.configuration !== undefined && {
+        configuration: input.configuration,
+      }),
+      ...(input.color !== undefined && { color: input.color }),
+      ...(input.material !== undefined && { material: input.material }),
+      ...(input.warranty !== undefined && { warranty: input.warranty }),
+      ...(input.image !== undefined && { image: input.image }),
+      ...(input.images !== undefined && { images: input.images }),
+      ...(input.inStock !== undefined && { inStock: input.inStock }),
+      ...(input.categoryId !== undefined && {
+        category: { connect: { id: input.categoryId } },
+      }),
+      discountAmount,
     };
 
-    return this.prisma.product.update({
-      where: {
-        id,
-      },
-      data,
-      include: {
-        category: true,
-      },
-    });
+    try {
+      return await this.prisma.product.update({
+        where: { id },
+        data,
+        include: { category: true },
+      });
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ConflictException(
+          'Такой slug уже используется другим товаром',
+        );
+      }
+      throw error;
+    }
   }
 
-  async remove(id: string) {
+  async remove(id: string): Promise<ProductWithCategory> {
     await this.findOne(id);
     return this.prisma.product.delete({
-      where: {
-        id,
-      },
+      where: { id },
+      include: { category: true },
     });
   }
 }

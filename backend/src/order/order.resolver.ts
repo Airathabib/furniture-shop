@@ -7,6 +7,7 @@ import { Authorized } from '../auth/decorators/authorized.decorator';
 import { Authorization } from '../auth/decorators/authorization.decorator';
 import { Role } from 'generated/prisma/enums';
 import type { User } from 'generated/prisma/client';
+import { QuickOrderDto } from './dto/quick-order.input';
 
 @Resolver(() => OrderModel)
 export class OrderResolver {
@@ -38,6 +39,13 @@ export class OrderResolver {
   async order(@Args('id') id: string, @Authorized() user: User) {
     const isAdmin = user.role === Role.ADMIN;
     return this.orderService.findOne(id, user.id, isAdmin);
+  }
+
+  @Mutation(() => OrderModel, {
+    description: 'Оформить быстрый заказ в 1 клик',
+  })
+  async quickOrder(@Args('input') input: QuickOrderDto) {
+    return this.orderService.quickOrder(input);
   }
 
   /**
